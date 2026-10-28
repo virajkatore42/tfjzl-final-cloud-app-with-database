@@ -8,24 +8,16 @@ except Exception:
 
 from django.conf import settings
 
-# Instructor model
 class Instructor(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     total_learners = models.IntegerField(default=0)
 
     def __str__(self):
         return self.user.username
 
 
-# Learner model
 class Learner(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     STUDENT = 'student'
     DEVELOPER = 'developer'
     DATA_SCIENTIST = 'data_scientist'
@@ -36,19 +28,13 @@ class Learner(models.Model):
         (DATA_SCIENTIST, 'Data Scientist'),
         (DATABASE_ADMIN, 'Database Admin')
     ]
-    occupation = models.CharField(
-        null=False,
-        max_length=20,
-        choices=OCCUPATION_CHOICES,
-        default=STUDENT
-    )
+    occupation = models.CharField(null=False, max_length=20, choices=OCCUPATION_CHOICES, default=STUDENT)
     social_link = models.URLField(max_length=200)
 
     def __str__(self):
         return self.user.username + "," + self.occupation
 
 
-# Course model
 class Course(models.Model):
     name = models.CharField(null=False, max_length=30, default='online course')
     image = models.ImageField(upload_to='course_images/')
@@ -61,7 +47,6 @@ class Course(models.Model):
         return "Name: " + self.name + "," + "Description: " + self.description
 
 
-# Lesson model
 class Lesson(models.Model):
     title = models.CharField(max_length=200, default="title")
     order = models.IntegerField(default=0)
@@ -72,16 +57,11 @@ class Lesson(models.Model):
         return self.title
 
 
-# Enrollment model
 class Enrollment(models.Model):
     AUDIT = 'audit'
     HONORS = 'honor'
     BETA = 'BETA'
-    COURSE_MODES = [
-        (AUDIT, 'Audit'),
-        (HONORS, 'Honor'),
-        (BETA, 'BETA')
-    ]
+    COURSE_MODES = [(AUDIT, 'Audit'), (HONORS, 'Honor'), (BETA, 'BETA')]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date_enrolled = models.DateField(default=now)
@@ -89,10 +69,9 @@ class Enrollment(models.Model):
     rating = models.FloatField(default=5.0)
 
 
-# --- Task 1: Question, Choice, and Submission Models ---
-
+# Question relates directly to Course as required
 class Question(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     question_text = models.CharField(max_length=500)
     grade = models.IntegerField(default=1)
 
@@ -117,3 +96,6 @@ class Submission(models.Model):
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
     choices = models.ManyToManyField(Choice)
     time = models.DateTimeField(default=now)
+
+    def __str__(self):
+        return f"Enrollment: {self.enrollment}, Time: {self.time}"
