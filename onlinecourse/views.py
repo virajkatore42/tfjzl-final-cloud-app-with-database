@@ -39,7 +39,6 @@ def submit(request, course_id):
     
     selected_ids = request.POST.getlist('choice')
     if not selected_ids:
-        # Check for individual choice checkboxes
         selected_ids = [value for key, value in request.POST.items() if key.startswith('choice_')]
         
     for choice_id in selected_ids:
@@ -67,12 +66,14 @@ def show_exam_result(request, course_id, submission_id):
             
     grade_percentage = int((total_score / total_grade) * 100) if total_grade > 0 else 0
     
+    # FIXED: Context includes all expected keys ('grade', 'total_score', 'total_grade', 'possible_score')
     context = {
         'course': course,
         'submission': submission,
         'selected_ids': selected_ids,
         'grade': grade_percentage,
         'total_score': total_score,
+        'possible_score': total_grade,
         'total_grade': total_grade
     }
     return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
