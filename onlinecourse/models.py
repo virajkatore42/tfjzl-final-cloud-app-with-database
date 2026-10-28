@@ -69,10 +69,10 @@ class Enrollment(models.Model):
     rating = models.FloatField(default=5.0)
 
 
-# Question relates directly to Course as required
+# Question Model (Uses TextField for question_text)
 class Question(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    question_text = models.CharField(max_length=500)
+    question_text = models.TextField()
     grade = models.IntegerField(default=1)
 
     def is_get_score(self, selected_ids):
@@ -83,6 +83,7 @@ class Question(models.Model):
         return self.question_text
 
 
+# Choice Model
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     choice_text = models.CharField(max_length=500)
@@ -92,6 +93,7 @@ class Choice(models.Model):
         return self.choice_text
 
 
+# Submission Model
 class Submission(models.Model):
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
     choices = models.ManyToManyField(Choice)
