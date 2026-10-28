@@ -1,7 +1,6 @@
 {% extends 'onlinecourse/base.html' %}
 {% block content %}
 <div class="container my-4">
-    <!-- Course Title & Description -->
     <div class="card mb-4">
         <div class="card-body">
             <h2 class="card-title">{{ course.name }}</h2>
@@ -9,7 +8,6 @@
         </div>
     </div>
 
-    <!-- Lessons Accordion -->
     <h3>Lessons</h3>
     <div class="accordion mb-4" id="lessonsAccordion">
         {% for lesson in course.lesson_set.all %}
@@ -30,7 +28,6 @@
         {% endfor %}
     </div>
 
-    <!-- Exam Section -->
     {% if user.is_authenticated %}
     <div class="card border-primary">
         <div class="card-header bg-primary text-white">
