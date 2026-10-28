@@ -70,5 +70,4 @@ class Submission(models.Model):
     choices = models.ManyToManyField(Choice)
 
     def __str__(self):
-        # FIXED: Exact string output format required by rubric
         return f"Enrollment: {self.enrollment}, Submission ID: {self.id}"
