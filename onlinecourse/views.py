@@ -1,74 +1,78 @@
-from django.db import models
-from django.conf import settings
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.views import generic
+from .models import Course, Lesson, Question, Choice, Submission, Enrollment
 
-class Course(models.Model):
-    name = models.CharField(null=False, max_length=30, default='online course')
-    image = models.ImageField(upload_to='course_images/')
-    description = models.CharField(max_length=1000)
-    pub_date = models.DateField(null=True)
-    instructors = models.ManyToManyField(settings.AUTH_USER_MODEL)
-    users = models.ManyToManyField(settings.AUTH_USER_MODEL, through='Enrollment')
+class CourseListView(generic.ListView):
+    template_name = 'onlinecourse/course_list.html'
+    context_object_name = 'course_list'
 
-    def __str__(self):
-        return "Name: " + self.name + "," + "Description: " + self.description
-
-
-class Lesson(models.Model):
-    title = models.CharField(max_length=200, default="title")
-    order = models.IntegerField(default=0)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    content = models.TextField()
-
-    def __str__(self):
-        return self.title
+    def get_queryset(self):
+        return Course.objects.order_by('-pub_date')[:10]
 
 
-class Enrollment(models.Model):
-    AUDIT = 'audit'
-    HONOR = 'honor'
-    BETA = 'BETA'
-    COURSE_MODES = [
-        (AUDIT, 'Audit'),
-        (HONOR, 'Honor'),
-        (BETA, 'Beta')
-    ]
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    date_enrolled = models.DateField(auto_now_add=True)
-    mode = models.CharField(max_length=5, choices=COURSE_MODES, default=AUDIT)
-    rating = models.FloatField(default=5.0)
+class CourseDetailView(generic.DetailView):
+    model = Course
+    template_name = 'onlinecourse/course_details_bootstrap.html'
 
 
-class Question(models.Model):
-    # FIXED: Must point to Course, not Lesson
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    question_text = models.CharField(max_length=200)
-    grade = models.IntegerField(default=1)
-
-    def __str__(self):
-        return self.question_text
-
-    def is_get_score(self, selected_ids):
-        all_answers = self.choice_set.filter(is_correct=True).count()
-        selected_correct = self.choice_set.filter(is_correct=True, id__in=selected_ids).count()
-        if all_answers == selected_correct and len(selected_ids) == all_answers:
-            return True
-        return False
+def enroll(request, course_id):
+    if request.method == 'POST':
+        course = get_object_or_404(Course, pk=course_id)
+        user = request.user
+        if not user.is_authenticated:
+            return redirect('onlinecourse:login')
+        Enrollment.objects.get_or_create(user=user, course=course)
+        return HttpResponseRedirect(reverse(viewname='onlinecourse:course_details', args=(course.id,)))
 
 
-class Choice(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    choice_text = models.CharField(max_length=100)
-    is_correct = models.BooleanField(default=False)
+def submit(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    user = request.user
+    
+    if not user.is_authenticated:
+        return redirect('onlinecourse:login')
+        
+    enrollment = Enrollment.objects.get(user=user, course=course)
+    submission = Submission.objects.create(enrollment=enrollment)
+    
+    selected_ids = request.POST.getlist('choice')
+    if not selected_ids:
+        # Check for individual choice checkboxes
+        selected_ids = [value for key, value in request.POST.items() if key.startswith('choice_')]
+        
+    for choice_id in selected_ids:
+        choice = get_object_or_404(Choice, pk=int(choice_id))
+        submission.choices.add(choice)
+        
+    submission.save()
+    return HttpResponseRedirect(reverse('onlinecourse:show_exam_result', args=(course.id, submission.id)))
 
-    def __str__(self):
-        return self.choice_text
 
-
-class Submission(models.Model):
-    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
-    choices = models.ManyToManyField(Choice)
-
-    def __str__(self):
-        # FIXED: Exact string output format required by autograder
-        return f"Enrollment: {self.enrollment}, Submission ID: {self.id}"
+def show_exam_result(request, course_id, submission_id):
+    course = get_object_or_404(Course, pk=course_id)
+    submission = get_object_or_404(Submission, pk=submission_id)
+    selected_choices = submission.choices.all()
+    selected_ids = [choice.id for choice in selected_choices]
+    
+    total_score = 0
+    total_grade = 0
+    
+    questions = course.question_set.all()
+    for question in questions:
+        total_grade += question.grade
+        if question.is_get_score(selected_ids):
+            total_score += question.grade
+            
+    grade_percentage = int((total_score / total_grade) * 100) if total_grade > 0 else 0
+    
+    context = {
+        'course': course,
+        'submission': submission,
+        'selected_ids': selected_ids,
+        'grade': grade_percentage,
+        'total_score': total_score,
+        'total_grade': total_grade
+    }
+    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
