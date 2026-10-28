@@ -3,8 +3,6 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .models import Course, Lesson, Enrollment, Question, Choice, Submission
 
-# Existing views (like course_details, enroll, etc.) go here...
-
 def submit(request, course_id):
     course = get_object_or_404(Course, pk=course_id)
     user = request.user
@@ -40,14 +38,16 @@ def show_exam_result(request, course_id, submission_id):
         if question.is_get_score(selected_ids):
             earned_score += question.grade
 
-    grade_percentage = int((earned_score / total_score) * 100) if total_score > 0 else 0
+    possible_score = total_score
+    grade_percentage = int((earned_score / possible_score) * 100) if possible_score > 0 else 0
 
     context = {
         'course': course,
         'selected_ids': selected_ids,
         'grade': grade_percentage,
         'total_score': total_score,
-        'possible': total_score,
+        'possible_score': possible_score,
+        'possible': possible_score,
         'earned_score': earned_score,
         'submission': submission,
     }
