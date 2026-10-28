@@ -4,7 +4,8 @@ from . import views
 app_name = 'onlinecourse'
 
 urlpatterns = [
-    # Existing routes above...
-    path('<int:course_id>/submit/', views.submit, name='submit'),
-    path('<int:course_id>/submission/<int:submission_id>/result/', views.show_exam_result, name='show_exam_result'),
+    # Submit route
+    path('course/<int:course_id>/submit/', views.submit, name='submit'),
+    # Exam result route WITH required 'course/' prefix
+    path('course/<int:course_id>/submission/<int:submission_id>/result/', views.show_exam_result, name='show_exam_result'),
 ]
