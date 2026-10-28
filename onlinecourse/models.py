@@ -70,4 +70,5 @@ class Submission(models.Model):
     choices = models.ManyToManyField(Choice)
 
     def __str__(self):
+        # EXACT required format:
         return f"Enrollment: {self.enrollment}, Submission ID: {self.id}"
