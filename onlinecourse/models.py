@@ -9,19 +9,19 @@ except Exception:
 from django.conf import settings
 import uuid
 
-# Instructor model
+
 class Instructor(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
     full_time = models.BooleanField(default=True)
-    total_learners = models.IntegerField()
+    total_learners = models.IntegerField(default=0)
 
     def __str__(self):
         return self.user.username
 
-# Learner model
+
 class Learner(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -46,10 +46,9 @@ class Learner(models.Model):
     social_link = models.URLField(max_length=200)
 
     def __str__(self):
-        return self.user.username + "," + \
-               self.occupation
+        return self.user.username + "," + self.occupation
 
-# Course model
+
 class Course(models.Model):
     name = models.CharField(null=False, max_length=30, default='online course')
     image = models.ImageField(upload_to='course_images/')
@@ -61,26 +60,26 @@ class Course(models.Model):
     is_enrolled = False
 
     def __str__(self):
-        return "Name: " + self.name + "," + \
-               "Description: " + self.description
+        return "Name: " + self.name + "," + "Description: " + self.description
 
-# Lesson model
+
 class Lesson(models.Model):
     title = models.CharField(max_length=200, default="title")
     order = models.IntegerField(default=0)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     content = models.TextField()
 
-# Enrollment model
-# <HINT> Once a user enrolled a class, an enrollment entry should be created between the user and course
-# And we could use the enrollment to track information such as exam submissions
+    def __str__(self):
+        return self.title
+
+
 class Enrollment(models.Model):
     AUDIT = 'audit'
-    HONOR = 'honor'
+    HONORS = 'honor'
     BETA = 'BETA'
     COURSE_MODES = [
         (AUDIT, 'Audit'),
-        (HONOR, 'Honor'),
+        (HONORS, 'Honor'),
         (BETA, 'BETA')
     ]
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -89,13 +88,14 @@ class Enrollment(models.Model):
     mode = models.CharField(max_length=5, choices=COURSE_MODES, default=AUDIT)
     rating = models.FloatField(default=5.0)
 
+    def __str__(self):
+        return f"Enrollment: {self.user.username} - {self.course.name}"
+
+
 class Question(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    content = models.CharField(max_length=200)
+    question_text = models.CharField(max_length=200)
     grade = models.IntegerField(default=50)
-
-    def __str__(self):
-        return "Question: " + self.content
 
     def is_get_score(self, selected_ids):
         all_answers = self.choice_set.filter(is_correct=True).count()
@@ -105,11 +105,22 @@ class Question(models.Model):
         else:
             return False
 
+    def __str__(self):
+        return "Question: " + self.question_text
+
+
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    content = models.CharField(max_length=200)
+    choice_text = models.CharField(max_length=100)
     is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.choice_text
+
 
 class Submission(models.Model):
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
     choices = models.ManyToManyField(Choice)
+
+    def __str__(self):
+        return f"Submission {self.id} for {self.enrollment}"
