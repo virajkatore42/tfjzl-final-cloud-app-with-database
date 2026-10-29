@@ -88,14 +88,11 @@ class Enrollment(models.Model):
     mode = models.CharField(max_length=5, choices=COURSE_MODES, default=AUDIT)
     rating = models.FloatField(default=5.0)
 
-    def __str__(self):
-        return f"Enrollment: {self.user.username} - {self.course.name}"
-
 
 class Question(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    question_text = models.CharField(max_length=200)
-    grade = models.IntegerField(default=50)
+    question_text = models.TextField()
+    grade = models.IntegerField(default=1)
 
     def is_get_score(self, selected_ids):
         all_answers = self.choice_set.filter(is_correct=True).count()
@@ -106,7 +103,7 @@ class Question(models.Model):
             return False
 
     def __str__(self):
-        return "Question: " + self.question_text
+        return self.question_text
 
 
 class Choice(models.Model):
@@ -123,4 +120,4 @@ class Submission(models.Model):
     choices = models.ManyToManyField(Choice)
 
     def __str__(self):
-        return f"Submission {self.id} for {self.enrollment}"
+        return f"{self.enrollment} - {self.id}"
